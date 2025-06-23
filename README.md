@@ -1,4 +1,121 @@
-# Welcome to your Expo app 👋
+
+
+# 🏥 Clinic Management App (Receptionist & Patient Module)
+
+This is a mobile application built with **React Native (using Expo Router)** that provides a streamlined interface for managing a clinic’s operations for both **Receptionists** and **Patients**.
+
+## 📱 Features
+
+### 👥 Role-Based Modules
+- **Receptionist**
+  - Add New Patient
+  - Book Appointment
+  - View Appointments
+  - Upload Reports
+  - View History
+  - View Prescriptions
+
+- **Patient**
+  - Login to access dashboard
+  - View Appointments
+  - View Prescriptions
+  - Profile Management
+
+---
+
+### 🏠 Homepage (index.tsx)
+- Acts as the entry point of the app.
+- Allows users to select either **Receptionist** or **Patient** mode.
+- Contains clinic logo and introductory text.
+- No tab bar is shown here to keep it clean.
+
+---
+
+### 🔐 Login Flow
+- After selecting a role, users are redirected to a **Login Page**.
+- After successful login:
+  - Role-based **Tab Navigation** is enabled.
+  - Tabs differ for Receptionist and Patient.
+
+---
+
+### 🧭 Navigation Logic
+- **Expo Router** with file-based routing.
+- Custom `_layout.tsx` in each module folder (`/receptionist`, `/patient`) to manage tab bar visibility and screens.
+- Tab bar only shows after login.
+
+---
+
+## 📂 Folder Structure
+
+app/
+├── index.tsx # Home page (Receptionist & Patient selection)
+├── auth/
+│ └── login.tsx # Shared login page
+├── receptionist/
+│ ├── _layout.tsx # Tab layout for receptionist
+│ ├── dashboard.tsx # Receptionist dashboard
+│ ├── add-patient.tsx
+│ ├── book-appointment.tsx
+│ ├── view-appointments.tsx
+│ ├── upload-report.tsx
+│ ├── view-history.tsx
+│ └── view-prescriptions.tsx
+├── patient/
+│ ├── _layout.tsx # Tab layout for patient
+│ ├── dashboard.tsx
+│ ├── appointments.tsx
+│ ├── prescriptions.tsx
+│ └── profile.tsx
+assets/
+├── images/ # All UI images (doctors, logo, icons etc.)
+
+ 
+---
+
+## 💻 Tech Stack
+
+- **React Native**
+- **Expo (with Expo Router)**
+- **TypeScript**
+- **React Navigation**
+- **Icons**: Ionicons, Font Awesome
+- **Local Navigation State** (no backend yet)
+
+---
+
+## 🚀 How to Run
+
+```bash
+# 1. Install dependencies
+npm install
+
+# 2. Start Expo server
+npx expo start
+
+# 3. Run on Android/iOS emulator or scan QR on real device
+
+
+🛠️ Planned Improvements
+🔐 Add authentication with backend
+
+🧾 Store data in Firebase or SQLite
+
+📤 Upload & fetch reports (PDFs/Images)
+
+🌐 Multi-language support
+
+🧩 Modular codebase with services & components
+
+
+
+
+
+
+
+
+
+
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
@@ -23,28 +140,4 @@ In the output, you'll find options to open the app in a
 - [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
 - [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+ 
