@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import COLORS from '../../constants/Colors';
 
@@ -8,7 +8,7 @@ export default function PatientDashboard() {
 
   // Sample patient data (replace with real logged-in user data)
   const patient = {
-    name: 'Rahul Verma',
+    name: 'Shivansh Pandey',
     mobile: '+91 9876543210',
     address: 'Lucknow, Uttar Pradesh',
   };
@@ -30,11 +30,31 @@ export default function PatientDashboard() {
   ];
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel' },
-      { text: 'Logout', onPress: () => router.replace('/auth/login') },
-    ]);
-  };
+  console.log("Logout button clicked");
+   if (Platform.OS === 'web') {
+    const confirm = window.confirm("Do you want to logout?");
+    if (confirm) {
+      console.log("Logging out...");
+      router.replace('/auth/login');
+    }
+  }else{
+
+  Alert.alert("Logging out", "Do you want to logout?", [  // its owrking on app only , not for web
+    {
+      text: "Cancel",
+      style: "cancel",
+    },
+    {
+      text: "Logout",
+      onPress: () => {
+        console.log("Logging out...");
+        router.replace('/auth/login');
+      },
+    },
+  ]);
+};
+  }
+
 
   return (
     <ScrollView style={styles.container}>

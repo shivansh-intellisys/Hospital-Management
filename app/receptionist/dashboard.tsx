@@ -78,17 +78,17 @@ export default function ReceptionistDashboard() {
 
         <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/upload-report')}>
           <Image source={require('../../assets/images/upload_report.jpg')} style={styles.icon} />
-          <Text style={styles.cardText}>Upload Report</Text>
+          <Text style={styles.cardText}>Upload Prescription</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/view-history')}>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/view-patient')}>
           <Image source={require('../../assets/images/upload_report.jpg')} style={styles.icon} />
-          <Text style={styles.cardText}>View History</Text>
+          <Text style={styles.cardText}>View Patient/ List</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/view-prescriptions')}>
           <Image source={require('../../assets/images/upload_report.jpg')} style={styles.icon} />
-          <Text style={styles.cardText}>View Prescription</Text>
+          <Text style={styles.cardText}>Upload Report</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

@@ -44,7 +44,7 @@ export default function PatientLayout() {
       />
       {/* ✅ HIDE this screen from the tab bar */}
       <Tabs.Screen
-        name="view-history"
+        name="view-patient"
         options={{
           href: null, // Hides this screen from tab bar
         }}

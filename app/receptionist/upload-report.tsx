@@ -1,150 +1,277 @@
-// app/receptionist/upload-report.tsx
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  Image,
+  Alert,
+  ScrollView,
+} from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { Picker } from '@react-native-picker/picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import COLORS from '@/constants/Colors';
 
-export default function UploadReport() {
-  const [selectedPatient, setSelectedPatient] = useState('');
-  const [reportTitle, setReportTitle] = useState('');
-  const [notes, setNotes] = useState('');
+export default function UploadPrescription() {
+  const [mode, setMode] = useState<'file' | 'manual' | null>(null);
+  const [form, setForm] = useState({
+    patientName: '',
+    age: '',
+    gender: '',
+    symptoms: '',
+    diagnosis: '',
+    medicines: '',
+    advice: '',
+    doctor: '',
+    date: new Date().toISOString().split('T')[0],
+  });
   const [file, setFile] = useState<DocumentPicker.DocumentPickerAsset | null>(null);
 
-  const handleFilePick = async () => {
+  const handlePickFile = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
-    if (result.assets && result.assets.length > 0) {
+    if (!result.canceled) {
       setFile(result.assets[0]);
+      Alert.alert('Success', 'File selected successfully');
     }
   };
 
-  const handleUpload = () => {
-    if (!selectedPatient || !reportTitle || !file) {
-      Alert.alert('Please fill all fields and select a file');
-      return;
-    }
+  const handleChange = (key: keyof typeof form, value: string) => {
+    setForm({ ...form, [key]: value });
+  };
 
-    // Upload logic here... Back-end part --------------------
-    Alert.alert('Success', 'Report uploaded successfully');
-    // Reset
-    setSelectedPatient('');
-    setReportTitle('');
-    setNotes('');
-    setFile(null);
+  const handleSubmit = async () => {
+    const now = new Date();
+    const timestamp = `${now.toLocaleDateString()} ${now.toLocaleTimeString()}`;
+
+    if (mode === 'file') {
+      if (!file) return Alert.alert('Error', 'Please select a file first');
+      const fileData = {
+        name: file.name,
+        type: file.mimeType,
+        uri: file.uri,
+        uploadedAt: timestamp,
+      };
+      await AsyncStorage.setItem('lastUploadedFile', JSON.stringify(fileData));
+      Alert.alert('Success', 'File uploaded successfully!');
+      setFile(null);
+    } else {
+      if (!form.patientName || !form.diagnosis || !form.medicines) {
+        return Alert.alert('Error', 'Please fill all required fields');
+      }
+      const formData = { ...form, submittedAt: timestamp };
+      await AsyncStorage.setItem('lastManualPrescription', JSON.stringify(formData));
+      Alert.alert('Success', 'Prescription submitted manually');
+      setForm({
+        patientName: '',
+        age: '',
+        gender: '',
+        symptoms: '',
+        diagnosis: '',
+        medicines: '',
+        advice: '',
+        doctor: '',
+        date: new Date().toISOString().split('T')[0],
+      });
+    }
+  };
+
+  const getFileIcon = (type: string | undefined) => {
+    if (!type) return '📎';
+    if (type.includes('pdf')) return '📄';
+    if (type.includes('image')) return '🖼️';
+    return '📎';
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.heading}>Upload Patient Report</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.heading}>Upload Prescription</Text>
 
-      <Text style={styles.label}>Select Patient</Text>
-      <View style={styles.pickerBox}>
-        <Picker
-          selectedValue={selectedPatient}
-          onValueChange={(itemValue) => setSelectedPatient(itemValue)}
-          style={styles.picker}
+      <View style={styles.toggleContainer}>
+        <TouchableOpacity
+          style={[styles.toggleButton, mode === 'file' && styles.activeToggle]}
+          onPress={() => setMode('file')}
         >
-          <Picker.Item label="-- Select Patient --" value="" />
-          <Picker.Item label="Ravi Kumar" value="ravi" />
-          <Picker.Item label="Sneha Gupta" value="sneha" />
-          <Picker.Item label="Amit Singh" value="amit" />
-        </Picker>
+          <Text style={styles.toggleText}>Upload File</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.toggleButton, mode === 'manual' && styles.activeToggle]}
+          onPress={() => setMode('manual')}
+        >
+          <Text style={styles.toggleText}>Enter Manually</Text>
+        </TouchableOpacity>
       </View>
 
-      <Text style={styles.label}>Report Title</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="e.g., X-ray Report"
-        value={reportTitle}
-        onChangeText={setReportTitle}
-      />
+      {mode === 'file' && (
+        <View style={styles.card}>
+          <Text style={styles.label}>Upload File (PDF, JPG, PNG)</Text>
+          <TouchableOpacity style={styles.uploadButton} onPress={handlePickFile}>
+            <Text style={styles.uploadText}>
+              {file ? `${getFileIcon(file.mimeType)} ${file.name}` : 'Choose File'}
+            </Text>
+          </TouchableOpacity>
+          {file?.mimeType?.startsWith('image/') && (
+            <Image source={{ uri: file.uri }} style={{ width: 100, height: 100, marginTop: 10 }} />
+          )}
+        </View>
+      )}
 
-      <Text style={styles.label}>Notes (Optional)</Text>
-      <TextInput
-        style={[styles.input, { height: 80 }]}
-        placeholder="Add any notes about this report"
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-      />
+      {mode === 'manual' && (
+        <View style={styles.card}>
+          <Text style={styles.label}>Patient Name *</Text>
+          <TextInput
+            style={styles.input}
+            value={form.patientName}
+            onChangeText={(text) => handleChange('patientName', text)}
+            placeholder="Full Name"
+          />
 
-      <TouchableOpacity style={styles.uploadBtn} onPress={handleFilePick}>
-        <Text style={styles.uploadBtnText}>{file ? file.name : 'Select File (PDF/Image)'}</Text>
-      </TouchableOpacity>
+          <Text style={styles.label}>Age</Text>
+          <TextInput
+            style={styles.input}
+            value={form.age}
+            keyboardType="numeric"
+            onChangeText={(text) => handleChange('age', text)}
+            placeholder="Age"
+          />
 
-      <TouchableOpacity style={styles.submitBtn} onPress={handleUpload}>
-        <Text style={styles.submitBtnText}>Upload Report</Text>
-      </TouchableOpacity>
-    </View>
+          <Text style={styles.label}>Gender</Text>
+          <TextInput
+            style={styles.input}
+            value={form.gender}
+            onChangeText={(text) => handleChange('gender', text)}
+            placeholder="Male / Female / Other"
+          />
+
+          <Text style={styles.label}>Symptoms</Text>
+          <TextInput
+            style={styles.input}
+            value={form.symptoms}
+            onChangeText={(text) => handleChange('symptoms', text)}
+            placeholder="e.g. Fever, Headache"
+          />
+
+          <Text style={styles.label}>Diagnosis *</Text>
+          <TextInput
+            style={styles.input}
+            value={form.diagnosis}
+            onChangeText={(text) => handleChange('diagnosis', text)}
+            placeholder="Diagnosis details"
+          />
+
+          <Text style={styles.label}>Medicines *</Text>
+          <TextInput
+            style={styles.input}
+            value={form.medicines}
+            onChangeText={(text) => handleChange('medicines', text)}
+            placeholder="Prescribed medicines"
+          />
+
+          <Text style={styles.label}>Advice</Text>
+          <TextInput
+            style={styles.input}
+            value={form.advice}
+            onChangeText={(text) => handleChange('advice', text)}
+            placeholder="Any additional advice"
+          />
+
+          <Text style={styles.label}>Doctor Name</Text>
+          <TextInput
+            style={styles.input}
+            value={form.doctor}
+            onChangeText={(text) => handleChange('doctor', text)}
+            placeholder="Dr. Name"
+          />
+
+          <Text style={styles.label}>Date</Text>
+          <TextInput style={styles.input} value={form.date} editable={false} />
+        </View>
+      )}
+
+      {mode && (
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Submit</Text>
+        </TouchableOpacity>
+      )}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: '5%',
+    padding: 20,
     backgroundColor: COLORS.background,
     flex: 1,
   },
   heading: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
-    color: COLORS.primary,
-    marginBottom: 20,
     textAlign: 'center',
+    marginBottom: 20,
+    color: COLORS.primary,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 20,
+    gap: 10,
+  },
+  toggleButton: {
+    backgroundColor: COLORS.card,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  activeToggle: {
+    backgroundColor: COLORS.primary,
+  },
+  toggleText: {
+    color: COLORS.text,
+    fontWeight: '600',
+  },
+  card: {
+    backgroundColor: COLORS.card,
+    padding: 16,
+    borderRadius: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginBottom: 20,
   },
   label: {
     fontSize: 15,
-    color: COLORS.text,
+    marginBottom: 4,
     fontWeight: '600',
-    marginBottom: 5,
-    marginLeft: 4,
-  },
-  pickerBox: {
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 10,
-    backgroundColor: COLORS.card,
-    marginBottom: 16,
-  },
-  picker: {
-    height: 48,
-    paddingHorizontal: 10,
     color: COLORS.text,
   },
   input: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    borderWidth: 1,
+    backgroundColor: '#fff',
+    padding: 10,
+    borderRadius: 6,
     borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    fontSize: 15,
-    color: COLORS.text,
-    marginBottom: 16,
+    borderWidth: 1,
+    marginBottom: 14,
   },
-  uploadBtn: {
-    backgroundColor: COLORS.secondary,
-    paddingVertical: 12,
-    borderRadius: 10,
+  uploadButton: {
+    backgroundColor: COLORS.success,
+    paddingVertical: 10,
     alignItems: 'center',
-    marginBottom: 20,
+    borderRadius: 8,
   },
-  uploadBtnText: {
-    color: COLORS.text,
+  uploadText: {
+    color: COLORS.buttonText,
     fontWeight: '600',
   },
-  submitBtn: {
-    backgroundColor: COLORS.success,
+  button: {
+    backgroundColor: COLORS.primary,
     paddingVertical: 14,
     borderRadius: 10,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
   },
-  submitBtnText: {
+  buttonText: {
     color: COLORS.buttonText,
     fontWeight: '700',
     fontSize: 16,
