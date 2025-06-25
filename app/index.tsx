@@ -73,7 +73,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation })  => {
       <View style={styles.cardContainer}>
         <TouchableOpacity 
           style={[styles.card, styles.patientCard]}
-         onPress={() => router.push('/auth/login')}
+         onPress={() => router.push({ pathname: '/auth/login', params: { role: 'patient' } })}
+
         >
           <Ionicons name="person" size={32} color="#fff" />
           <Text style={styles.cardTitle}>Patient</Text>
@@ -82,7 +83,8 @@ const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ navigation })  => {
 
         <TouchableOpacity 
           style={[styles.card, styles.receptionCard]}
-          onPress={() => router.push('/auth/login')}
+          onPress={() => router.push({ pathname: '/auth/login', params: { role: 'receptionist' } })}
+
         >
           <Ionicons name="desktop" size={32} color="#fff" />
           <Text style={styles.cardTitle}>Reception</Text>

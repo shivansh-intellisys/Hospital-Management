@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,8 @@ import {
   ScrollView,
   Dimensions,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
@@ -21,21 +22,54 @@ const colors = {
   border: '#ddd',
   danger: '#FF4C4C',
 };
+type Patient = {
+  id: number;
+  name: string;
+  mobile: string;
+  address: string;
+  date: string;
+  time: string;
+};
 
 export default function ReceptionistDashboard() {
   const router = useRouter();
+  const [todayCount, setTodayCount] = useState(0);
+
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // format: yyyy-mm-dd
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchTodayPatients = async () => {
+        try {
+          const stored = await AsyncStorage.getItem('patients');
+          const list: Patient[] = stored ? JSON.parse(stored) : [];
+
+          const today = getTodayDate();
+          const todayPatients = list.filter(p => p.date === today);
+          setTodayCount(todayPatients.length);
+        } catch (error) {
+          console.error('Error fetching today\'s patients:', error);
+        }
+      };
+
+      fetchTodayPatients();
+    }, [])
+  );
 
   return (
     <ScrollView style={styles.container}>
       {/* Header with Profile & Logout */}
       <View style={styles.header}>
         <Text style={styles.title}>Receptionist Dashboard</Text>
-        <View style={styles.profileSection}>         
+        <View style={styles.profileSection}>
           <TouchableOpacity onPress={() => router.replace('/receptionist/receptionistProfile')}>
-            <Image  
-            source={require('../../assets/images/receptionist.jpg')}
-            style={styles.avatar}
-          />
+            <Image
+              source={require('../../assets/images/receptionist.jpg')}
+              style={styles.avatar}
+            />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => router.replace('/auth/login')}>
             <Text style={styles.logout}>Logout</Text>
@@ -46,12 +80,12 @@ export default function ReceptionistDashboard() {
       {/* Live Stats */}
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
-          <Text style={styles.statValue}>58</Text>
-          <Text style={styles.statLabel}>Total Patients</Text>
+          <Text style={styles.statValue}>{todayCount}</Text>
+          <Text style={styles.statLabel}>Today's Total Patients</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statValue}>12</Text>
-          <Text style={styles.statLabel}>Today's Appointments</Text>
+          <Text style={styles.statLabel}>Pending Appointments</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statValue}>5</Text>
@@ -71,9 +105,9 @@ export default function ReceptionistDashboard() {
           <Text style={styles.cardText}>Book Appointment</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/view-appointments')}>
+        <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/today-appointments')}>
           <Image source={require('../../assets/images/view_appointments.jpg')} style={styles.icon} />
-          <Text style={styles.cardText}>View Appointments</Text>
+          <Text style={styles.cardText}>Today's Appointments</Text>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.card} onPress={() => router.push('/receptionist/upload-report')}>
@@ -159,7 +193,7 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
   card: {
     width: '48%',
@@ -172,17 +206,17 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     shadowOffset: { width: 0, height: 2 },
-    elevation: 3
+    elevation: 3,
   },
   icon: {
     width: 50,
     height: 50,
-    marginBottom: 10
+    marginBottom: 10,
   },
   cardText: {
     fontSize: 14,
     fontWeight: '600',
     color: colors.text,
-    textAlign: 'center'
-  }
+    textAlign: 'center',
+  },
 });

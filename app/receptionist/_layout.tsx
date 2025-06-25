@@ -56,7 +56,7 @@ export default function PatientLayout() {
         }}
       />
        <Tabs.Screen
-        name="view-appointments"
+        name="today-appointments"
         options={{
           href: null, // Hides this screen from tab bar
         }}

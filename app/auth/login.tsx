@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+ 
+
 
 const roles = [
   { label: 'Receptionist', value: 'receptionist', icon: require('@/assets/images/receptionist.jpg') },
@@ -9,10 +11,17 @@ const roles = [
 ];
 
 export default function LoginScreen() {
+  const { role } = useLocalSearchParams();  // Get role from query param
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState('receptionist');
+
+  useEffect(() => {
+    if (role === 'patient' || role === 'receptionist') {
+      setSelectedRole(role);
+    }
+  }, [role]);
 
   const handleLogin = () => {
     // ✅ Normally you'd validate from backend here
@@ -28,7 +37,7 @@ export default function LoginScreen() {
     } else if (selectedRole === 'patient') {
       router.replace('/patient/patientDashboard');
     } else {
-      alert('Doctor flow not implemented yet'); //   if doctor also want login page then we can add 
+      router.replace('/Doctor/doctorDashboard'); //   if doctor also want login page then we can add 
     }
   };
 

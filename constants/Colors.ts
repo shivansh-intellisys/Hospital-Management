@@ -11,6 +11,7 @@ const COLORS = {
   success: '#4CAF50',
   lightBlue: '#D6EAF8', 
   card: '#F9F9F9',
+  light: '#f5f5f5',
    tint: '#1E90FF', 
    buttonText: '#ffffff',
 lightPrimary:'#ffffff'

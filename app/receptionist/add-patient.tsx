@@ -6,8 +6,11 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNPickerSelect from 'react-native-picker-select';
 import COLORS from '@/constants/Colors';
+import { useRouter } from 'expo-router';
 
 export default function AddPatient() {
+  const router = useRouter();
+
   const [form, setForm] = useState({
     name: '',
     age: '',
@@ -28,28 +31,27 @@ export default function AddPatient() {
   };
 
   const validate = () => {
-  const { name, age, gender, address, mobile, department } = form;
+    const { name, age, gender, address, mobile, department } = form;
 
-  if (
-    name.trim() === '' ||
-    age.trim() === '' ||
-    gender.trim() === '' ||
-    address.trim() === '' ||
-    mobile.trim() === '' ||
-    department.trim() === ''
-  ) {
-    Alert.alert('Validation Error', 'Please fill all required fields.');
-    return false;
-  }
+    if (
+      name.trim() === '' ||
+      age.trim() === '' ||
+      gender.trim() === '' ||
+      address.trim() === '' ||
+      mobile.trim() === '' ||
+      department.trim() === ''
+    ) {
+      Alert.alert('Validation Error', 'Please fill all required fields.');
+      return false;
+    }
 
-  if (!/^\d{10}$/.test(mobile)) {
-    Alert.alert('Validation Error', 'Mobile number must be exactly 10 digits.');
-    return false;
-  }
+    if (!/^\d{10}$/.test(mobile)) {
+      Alert.alert('Validation Error', 'Mobile number must be exactly 10 digits.');
+      return false;
+    }
 
-  return true;
-};
-
+    return true;
+  };
 
   const handleSubmit = async () => {
     if (!validate()) return;
@@ -73,7 +75,10 @@ export default function AddPatient() {
       const updatedList = [...existing, newPatient];
       await AsyncStorage.setItem('patients', JSON.stringify(updatedList));
 
-      Alert.alert('Success', 'Patient added successfully!');
+      Alert.alert('Success', 'Patient added successfully!', [
+        { text: 'OK', onPress: () => router.replace('/receptionist/view-patient') }
+      ]);
+
       setForm({ name: '', age: '', gender: '', address: '', mobile: '', email: '', department: '', doctor: '' });
 
     } catch (error) {
@@ -211,7 +216,6 @@ const styles = StyleSheet.create({
   },
   pickerInput: {
     fontSize: 15,
-      
     paddingVertical: 10,
     paddingHorizontal: 4,
     color: COLORS.text,
@@ -230,22 +234,21 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   dropdown: {
-  backgroundColor: COLORS.card,
-  borderRadius: 10,
-  borderWidth: 0,
-  borderColor: 'transparent',
-  paddingHorizontal: 14,
-  paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-  fontSize: 15,
-  color: COLORS.text,
-  marginBottom: 16,
-  shadowColor: '#000',
-  shadowOpacity: 0.05,
-  shadowOffset: { width: 0, height: 2 },
-  shadowRadius: 3,
-  elevation: 1,
-},
-
+    backgroundColor: COLORS.card,
+    borderRadius: 10,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    paddingHorizontal: 14,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
+    fontSize: 15,
+    color: COLORS.text,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 1,
+  },
   buttonText: {
     color: COLORS.buttonText,
     fontWeight: '700',
