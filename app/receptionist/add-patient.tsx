@@ -1,25 +1,21 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, StyleSheet, ScrollView,
-  TouchableOpacity, Platform, Alert
+  TouchableOpacity, Platform, Alert, KeyboardAvoidingView
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import RNPickerSelect from 'react-native-picker-select';
+import { FontAwesome5 } from '@expo/vector-icons';
 import COLORS from '@/constants/Colors';
 import { useRouter } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 export default function AddPatient() {
   const router = useRouter();
 
   const [form, setForm] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    address: '',
-    mobile: '',
-    email: '',
-    department: '',
-    doctor: '',
+    name: '', age: '', gender: '', address: '',
+    mobile: '', email: '', department: '', doctor: '',
   });
 
   const handleChange = (key: string, value: string) => {
@@ -31,21 +27,19 @@ export default function AddPatient() {
   };
 
   const validate = () => {
-    const { name, age, gender, address, mobile, department } = form;
+    const requiredFields: Record<string, string> = {
+      name: 'Patient Name', age: 'Age', gender: 'Gender',
+      address: 'Address', mobile: 'Mobile Number', department: 'Department'
+    };
 
-    if (
-      name.trim() === '' ||
-      age.trim() === '' ||
-      gender.trim() === '' ||
-      address.trim() === '' ||
-      mobile.trim() === '' ||
-      department.trim() === ''
-    ) {
-      Alert.alert('Validation Error', 'Please fill all required fields.');
-      return false;
+    for (const key in requiredFields) {
+      if (form[key as keyof typeof form].trim() === '') {
+        Alert.alert('Validation Error', `${requiredFields[key]} is required.`);
+        return false;
+      }
     }
 
-    if (!/^\d{10}$/.test(mobile)) {
+    if (!/^\d{10}$/.test(form.mobile)) {
       Alert.alert('Validation Error', 'Mobile number must be exactly 10 digits.');
       return false;
     }
@@ -69,7 +63,7 @@ export default function AddPatient() {
         ...form,
         name: capitalizeWords(form.name),
         date,
-        time
+        time,
       };
 
       const updatedList = [...existing, newPatient];
@@ -80,179 +74,173 @@ export default function AddPatient() {
       ]);
 
       setForm({ name: '', age: '', gender: '', address: '', mobile: '', email: '', department: '', doctor: '' });
-
     } catch (error) {
       console.error('Error storing data:', error);
     }
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={styles.heading}>Add Patient & Book Appointment</Text>
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+        <Animated.Text entering={FadeInDown.duration(800)} style={styles.heading}>
+          <FontAwesome5 name="user-plus" size={22} color={COLORS.primary} /> Add Patient & Book Appointment
+        </Animated.Text>
 
-      <Text style={styles.label}>Patient Name *</Text>
-      <TextInput
-        style={styles.input}
-        value={form.name}
-        onChangeText={(text) => handleChange('name', text)}
-        placeholder="Enter full name"
-      />
+        {renderInput('Patient Name', 'name', form.name, 'Enter full name', true, 'default', 'user')}
+        {renderInput('Age', 'age', form.age, 'Enter age', true, 'numeric', 'calendar')}
 
-      <Text style={styles.label}>Age *</Text>
-      <TextInput
-        style={styles.input}
-        value={form.age}
-        keyboardType="numeric"
-        onChangeText={(text) => handleChange('age', text)}
-        placeholder="Enter age"
-      />
+        {renderPicker('Gender', 'gender', form.gender, true, [
+          { label: 'Male', value: 'Male' },
+          { label: 'Female', value: 'Female' },
+          { label: 'Other', value: 'Other' },
+        ])}
 
-      <Text style={styles.label}>Gender *</Text>
-      <View style={styles.input}>
-        <RNPickerSelect
-          onValueChange={(value) => handleChange('gender', value)}
-          placeholder={{ label: 'Select Gender', value: '' }}
-          value={form.gender}
-          items={[
-            { label: 'Male', value: 'Male' },
-            { label: 'Female', value: 'Female' },
-            { label: 'Other', value: 'Other' },
-          ]}
-          style={{ inputAndroid: styles.pickerInput,placeholder: { color: '#999' }, inputIOS: styles.pickerInput }}
-        />
-      </View>
+        {renderInput('Address', 'address', form.address, 'Enter full address', true, 'default', 'map-marker-alt')}
+        {renderInput('Mobile Number', 'mobile', form.mobile, 'Enter mobile number', true, 'phone-pad', 'phone')}
+        {renderInput('Email', 'email', form.email, 'Enter email', false, 'email-address', 'envelope')}
 
-      <Text style={styles.label}>Address *</Text>
-      <TextInput
-        style={styles.input}
-        value={form.address}
-        onChangeText={(text) => handleChange('address', text)}
-        placeholder="Enter full address"
-      />
+        {renderPicker('Department', 'department', form.department, true, [
+          { label: 'Cardiology', value: 'Cardiology' },
+          { label: 'Neurology', value: 'Neurology' },
+          { label: 'Orthopedics', value: 'Orthopedics' },
+          { label: 'Pediatrics', value: 'Pediatrics' },
+        ])}
 
-      <Text style={styles.label}>Mobile Number *</Text>
-      <TextInput
-        style={styles.input}
-        value={form.mobile}
-        keyboardType="phone-pad"
-        onChangeText={(text) => handleChange('mobile', text)}
-        placeholder="Enter mobile number"
-      />
+        {renderInput('Doctor Name', 'doctor', form.doctor, 'Enter doctor name', false, 'default', 'user-md')}
 
-      <Text style={styles.label}>Email (Optional)</Text>
-      <TextInput
-        style={styles.input}
-        value={form.email}
-        keyboardType="email-address"
-        onChangeText={(text) => handleChange('email', text)}
-        placeholder="Enter email"
-      />
-
-      <Text style={styles.label}>Department *</Text>
-      <View style={styles.input}>
-        <RNPickerSelect
-          onValueChange={(value) => handleChange('department', value)}
-          placeholder={{ label: 'Select Department', value: '' }}
-          value={form.department}
-          items={[
-            { label: 'Cardiology', value: 'Cardiology' },
-            { label: 'Neurology', value: 'Neurology' },
-            { label: 'Orthopedics', value: 'Orthopedics' },
-            { label: 'Pediatrics', value: 'Pediatrics' },
-          ]}
-          style={{ inputAndroid: styles.pickerInput, placeholder: { color: '#999' }, inputIOS: styles.pickerInput }}
-        />
-      </View>
-
-      <Text style={styles.label}>Doctor Name</Text>
-      <TextInput
-        style={styles.input}
-        value={form.doctor}
-        onChangeText={(text) => handleChange('doctor', text)}
-        placeholder="Enter doctor name"
-      />
-
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Submit & Book Appointment</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+          <Text style={styles.buttonText}>Submit & Book Appointment</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
+
+  function renderInput(
+    label: string,
+    key: string,
+    value: string,
+    placeholder: string,
+    required = false,
+    keyboardType: 'default' | 'numeric' | 'email-address' | 'phone-pad' = 'default',
+    icon?: string
+  ) {
+    return (
+      <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.inputBlock}>
+        <Text style={styles.label}>{label} {required && <Text style={styles.required}>*</Text>}</Text>
+        <View style={styles.inputIconWrapper}>
+          {icon && <FontAwesome5 name={icon} size={16} color={COLORS.icon} style={styles.icon} />}
+          <TextInput
+            style={styles.input}
+            value={value}
+            onChangeText={(text) => handleChange(key, text)}
+            placeholder={placeholder}
+            keyboardType={keyboardType}
+            placeholderTextColor={COLORS.placeholder}
+          />
+        </View>
+      </Animated.View>
+    );
+  }
+
+  function renderPicker(label: string, key: string, value: string, required = false, items: any[]) {
+    return (
+      <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.inputBlock}>
+        <Text style={styles.label}>{label} {required && <Text style={styles.required}>*</Text>}</Text>
+        <View style={styles.pickerWrapper}>
+          <RNPickerSelect
+            onValueChange={(val) => handleChange(key, val)}
+            placeholder={{ label: `Select ${label}`, value: '' }}
+            value={value}
+            items={items}
+            style={pickerSelectStyles}
+          />
+        </View>
+      </Animated.View>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
   container: {
-    padding: '5%',
+    padding: 20,
+    paddingBottom: 80,
     backgroundColor: COLORS.background,
   },
   heading: {
-    fontSize: 24,
+    fontSize: 26,
     fontWeight: '700',
     color: COLORS.primary,
-    marginBottom: 20,
+    marginBottom: 30,
     textAlign: 'center',
+    backgroundColor: COLORS.card,
+    padding: 12,
+    borderRadius: 10,
   },
   label: {
     fontSize: 15,
-    marginBottom: 5,
+    marginBottom: 6,
     color: COLORS.text,
     fontWeight: '600',
-    marginLeft: 4,
   },
-  input: {
+  required: {
+    color: COLORS.danger,
+    fontWeight: '900',
+    fontSize: 16,
+  },
+  inputBlock: {
+    marginBottom: 18,
+  },
+  inputIconWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    fontSize: 15,
-    color: COLORS.text,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 1,
+    paddingHorizontal: 10,
   },
-  pickerInput: {
+  icon: {
+    marginRight: 8,
+  },
+  input: {
+    flex: 1,
     fontSize: 15,
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
     color: COLORS.text,
-    borderBlockColor:'none'
+  },
+  pickerWrapper: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 10,
+    backgroundColor: COLORS.card,
   },
   button: {
     backgroundColor: COLORS.success,
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 20,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  dropdown: {
-    backgroundColor: COLORS.card,
-    borderRadius: 10,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    paddingHorizontal: 14,
-    paddingVertical: Platform.OS === 'ios' ? 12 : 10,
-    fontSize: 15,
-    color: COLORS.text,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 1,
+    marginTop: 25,
   },
   buttonText: {
     color: COLORS.buttonText,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 16,
-    letterSpacing: 0.5,
   },
 });
+
+const pickerSelectStyles = {
+  inputIOS: {
+    fontSize: 15,
+    paddingVertical: 12,
+    color: COLORS.text,
+  },
+  inputAndroid: {
+    fontSize: 15,
+    paddingVertical: 12,
+    color: COLORS.text,
+  },
+  placeholder: {
+    color: COLORS.placeholder,
+  },
+};

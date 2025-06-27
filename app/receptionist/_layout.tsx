@@ -34,7 +34,7 @@ export default function PatientLayout() {
         }}
       />
         <Tabs.Screen
-        name="receptionistProfile"
+        name="receptionProfile"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color, size }) => (
@@ -67,12 +67,7 @@ export default function PatientLayout() {
           href: null, // Hides this screen from tab bar
         }}
       />
-      <Tabs.Screen
-        name="receptionProfile"
-        options={{
-          href: null, // Hides this screen from tab bar
-        }}
-      />
+       
       <Tabs.Screen
         name="view-prescriptions"
         options={{

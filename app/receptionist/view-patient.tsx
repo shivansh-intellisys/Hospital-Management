@@ -9,9 +9,10 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import COLORS from '@/constants/Colors';
 import { useRouter, useFocusEffect } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 // ✅ Define the Patient type
 type Patient = {
@@ -67,15 +68,20 @@ export default function ViewPatients() {
   return (
     <View style={styles.wrapper}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
-        <Text style={styles.title}>📋 All Patients</Text>
+        <Animated.Text entering={FadeInDown.duration(800)} style={styles.title}>
+          <FontAwesome5 name="clipboard-list" size={22} color={COLORS.primary} /> All Patients
+        </Animated.Text>
 
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Search by name or date"
-          placeholderTextColor={COLORS.gray}
-          value={search}
-          onChangeText={handleSearch}
-        />
+        <View style={styles.searchWrapper}>
+          <Ionicons name="search" size={18} color={COLORS.gray} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search by name or date"
+            placeholderTextColor={COLORS.placeholder}
+            value={search}
+            onChangeText={handleSearch}
+          />
+        </View>
 
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.primary} />
@@ -83,15 +89,15 @@ export default function ViewPatients() {
           <Text style={styles.noData}>No patients found.</Text>
         ) : (
           filtered.map((patient: Patient) => (
-            <View key={patient.id} style={styles.card}>
+            <Animated.View key={patient.id} entering={FadeInDown.delay(100).duration(300)} style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.patientName}>{patient.name}</Text>
                 <Text style={styles.patientId}>#{patient.id}</Text>
               </View>
-              <Text style={styles.info}>📱 {patient.mobile}</Text>
-              <Text style={styles.info}>🏠 {patient.address}</Text>
-              <Text style={styles.info}>📅 {patient.date} ⏰ {patient.time}</Text>
-            </View>
+              <Text style={styles.info}><Ionicons name="call" size={14} /> {patient.mobile}</Text>
+              <Text style={styles.info}><Ionicons name="location" size={14} /> {patient.address}</Text>
+              <Text style={styles.info}><Ionicons name="calendar" size={14} /> {patient.date} <Ionicons name="time" size={14} /> {patient.time}</Text>
+            </Animated.View>
           ))
         )}
       </ScrollView>
@@ -115,20 +121,33 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
     color: COLORS.primary,
+    backgroundColor: COLORS.card,
+    padding: 10,
+    borderRadius: 10,
   },
-  searchInput: {
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
     borderColor: COLORS.border,
     borderWidth: 1,
+    marginBottom: 20,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
     color: COLORS.text,
+    paddingVertical: 10,
   },
   card: {
     backgroundColor: COLORS.card,
@@ -160,6 +179,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.text,
     marginBottom: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   noData: {
     textAlign: 'center',
@@ -171,7 +192,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 20,
     bottom: 30,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.success,
     padding: 16,
     borderRadius: 30,
     elevation: 5,

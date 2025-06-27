@@ -58,6 +58,7 @@ export default function ReceptionistDashboard() {
       fetchTodayPatients();
     }, [])
   );
+  
 
   return (
     <ScrollView style={styles.container}>
@@ -65,7 +66,7 @@ export default function ReceptionistDashboard() {
       <View style={styles.header}>
         <Text style={styles.title}>Receptionist Dashboard</Text>
         <View style={styles.profileSection}>
-          <TouchableOpacity onPress={() => router.replace('/receptionist/receptionistProfile')}>
+          <TouchableOpacity onPress={() => router.replace('/receptionist/receptionProfile')}>
             <Image
               source={require('../../assets/images/receptionist.jpg')}
               style={styles.avatar}

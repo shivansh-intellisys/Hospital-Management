@@ -14,6 +14,8 @@ const COLORS = {
   light: '#f5f5f5',
    tint: '#1E90FF', 
    buttonText: '#ffffff',
+    icon: '#4B7BE5',            // or any color you want for icons
+  placeholder: '#9CA3AF',
 lightPrimary:'#ffffff'
 };
 
