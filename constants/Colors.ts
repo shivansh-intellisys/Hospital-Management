@@ -16,7 +16,13 @@ const COLORS = {
    buttonText: '#ffffff',
     icon: '#4B7BE5',            // or any color you want for icons
   placeholder: '#9CA3AF',
-lightPrimary:'#ffffff'
+lightPrimary:'#ffffff',
+ warning: '#F59E0B', 
+ info: '#007bff',
+ link: '#1e90ff'  ,
+ disabled: "#cccccc",
+
+
 };
 
 export default COLORS;

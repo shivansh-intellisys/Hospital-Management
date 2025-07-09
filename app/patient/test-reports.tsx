@@ -3,36 +3,38 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import COLORS from '@/constants/Colors';
 
-interface Prescription {
+interface TestReport {
   id: string;
   title: string;
   date: string;
   fileUrl: string;
-  visitId: string;
 }
 
-export default function MyPrescriptions() {
-  const { id } = useLocalSearchParams(); // visitId from query
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+export default function TestReports() {
+  const { id } = useLocalSearchParams();
+  const [reports, setReports] = useState<TestReport[]>([]);
 
   useEffect(() => {
-    const loadPrescriptions = async () => {
-      try {
-        const stored = await AsyncStorage.getItem('prescriptions');
-        const allPrescriptions: Prescription[] = stored ? JSON.parse(stored) : [];
+    // Sample test reports — replace with real AsyncStorage fetch
+    const mockReports: TestReport[] = [
+      {
+        id: '1',
+        title: 'Blood Test Report',
+        date: '2024-07-01',
+        fileUrl: 'https://example.com/reports/blood-test.pdf',
+      },
+      {
+        id: '2',
+        title: 'X-Ray Chest',
+        date: '2024-07-01',
+        fileUrl: 'https://example.com/reports/xray.jpg',
+      },
+    ];
 
-        const filtered = allPrescriptions.filter(p => p.visitId === id);
-        setPrescriptions(filtered);
-      } catch (err) {
-        console.log("Error fetching prescriptions:", err);
-      }
-    };
-
-    loadPrescriptions();
-  }, [id]);
+    setReports(mockReports); // You can filter by visit ID if needed
+  }, []);
 
   const openFile = async (url: string) => {
     const supported = await Linking.canOpenURL(url);
@@ -42,17 +44,16 @@ export default function MyPrescriptions() {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.header}>💊 Prescriptions</Text>
-
-      {prescriptions.length === 0 ? (
-        <Text style={styles.noData}>No prescriptions found for this visit.</Text>
+      <Text style={styles.header}>🧪 Test Reports</Text>
+      {reports.length === 0 ? (
+        <Text style={styles.noData}>No reports found.</Text>
       ) : (
-        prescriptions.map((presc) => (
-          <View key={presc.id} style={styles.card}>
-            <Text style={styles.title}>{presc.title}</Text>
-            <Text style={styles.date}>📅 {presc.date}</Text>
-            <TouchableOpacity onPress={() => openFile(presc.fileUrl)}>
-              <Text style={styles.link}>🔗 View Prescription</Text>
+        reports.map((report) => (
+          <View key={report.id} style={styles.card}>
+            <Text style={styles.title}>{report.title}</Text>
+            <Text style={styles.date}>📅 {report.date}</Text>
+            <TouchableOpacity onPress={() => openFile(report.fileUrl)}>
+              <Text style={styles.link}>🔗 View Report</Text>
             </TouchableOpacity>
           </View>
         ))

@@ -1,22 +1,19 @@
+// ✅ Updated TodayAppointments screen with integrated PatientDetailsModal (edit/view)
+
 import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  ScrollView,
-  ActivityIndicator,
-  TouchableOpacity,
-  Pressable,
-  Platform,
+  View, Text, TextInput, StyleSheet, ScrollView,
+  ActivityIndicator, TouchableOpacity, Platform, Alert, Dimensions
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import COLORS from '@/constants/Colors';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { FontAwesome5 } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
-import { useRouter, useFocusEffect } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { getStorageItem, setStorageItem } from '@/utils/storage';
+import PatientDetailsModal from '@/components/ui/PatientDetailsModal';
+
+const { width } = Dimensions.get('window');
 
 // Types
 
@@ -27,22 +24,24 @@ type Patient = {
   address: string;
   date: string;
   time: string;
+  status?: 'pending' | 'completed';
+  gender?: string;
+  age?: string;
+  bloodGroup?: string;
+  email?: string;
+  note?: string;
 };
 
-type SortOption = 'date' | 'newest' | 'oldest';
+type SortOption = 'pendingFirst' | 'completedFirst';
 
 export default function TodayAppointments() {
   const [appointments, setAppointments] = useState<Patient[]>([]);
   const [filtered, setFiltered] = useState<Patient[]>([]);
-  const [search, setSearch] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [sortOption, setSortOption] = useState<SortOption>('date');
-  const [showFromPicker, setShowFromPicker] = useState<boolean>(false);
-  const [showToPicker, setShowToPicker] = useState<boolean>(false);
-  const [fromDate, setFromDate] = useState<Date | null>(null);
-  const [toDate, setToDate] = useState<Date | null>(null);
-
-  const router = useRouter();
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [statusSortOption, setStatusSortOption] = useState<SortOption>('pendingFirst');
+const [selectedPatientId, setSelectedPatientId] = useState<number | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   const getTodayDate = () => {
     const today = new Date();
@@ -51,15 +50,11 @@ export default function TodayAppointments() {
 
   const fetchTodayAppointments = async () => {
     try {
-      const stored = await AsyncStorage.getItem('patients');
-      const list: Patient[] = stored ? JSON.parse(stored) : [];
+      const list: Patient[] = (await getStorageItem('patients')) || [];
       const today = getTodayDate();
-      const todayPatients = list.filter((p: Patient) => p.date === today);
-      const sorted = sortAppointments(todayPatients, sortOption);
+      const todayPatients = list.filter(p => p.date === today);
       setAppointments(todayPatients);
-      setFiltered(sorted);
-      setFromDate(null);
-      setToDate(null);
+      applyFilters(todayPatients, search, statusSortOption);
     } catch (error) {
       console.error(error);
     } finally {
@@ -67,176 +62,155 @@ export default function TodayAppointments() {
     }
   };
 
-  useEffect(() => {
-    fetchTodayAppointments();
-  }, [sortOption]);
-
   useFocusEffect(
     React.useCallback(() => {
       fetchTodayAppointments();
-    }, [sortOption])
+    }, [statusSortOption])
   );
+
+  const applyFilters = (data: Patient[], searchText: string, sortOption: SortOption) => {
+    const lower = searchText.toLowerCase();
+    let results = data.filter(p =>
+      p.name.toLowerCase().includes(lower) || p.time.toLowerCase().includes(lower)
+    );
+
+    results = sortByStatus(results, sortOption);
+    setFiltered(results);
+  };
 
   const handleSearch = (text: string) => {
     setSearch(text);
-    const lower = text.toLowerCase();
-    const results = appointments.filter((p: Patient) =>
-      p.name.toLowerCase().includes(lower) || p.time.toLowerCase().includes(lower)
-    );
-    const sorted = sortAppointments(results, sortOption);
-    setFiltered(sorted);
+    applyFilters(appointments, text, statusSortOption);
   };
 
-  const sortAppointments = (data: Patient[], option: SortOption): Patient[] => {
-    switch (option) {
-      case 'newest':
-        return [...data].sort((a, b) => b.id - a.id);
-      case 'oldest':
-        return [...data].sort((a, b) => a.id - b.id);
-      case 'date':
-      default:
-        return [...data].sort((a, b) => {
-          const dtA = new Date(`${a.date}T${a.time}`);
-          const dtB = new Date(`${b.date}T${b.time}`);
-          return dtA.getTime() - dtB.getTime();
-        });
-    }
-  };
-
-  const applyDateFilter = () => {
-    if (!fromDate && !toDate) {
-      setFiltered(sortAppointments(appointments, sortOption));
-      return;
-    }
-    const filteredByRange = appointments.filter((p: Patient) => {
-      const d = new Date(p.date);
-      return (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+  const sortByStatus = (data: Patient[], option: SortOption) => {
+    return [...data].sort((a, b) => {
+      if (option === 'pendingFirst') {
+        return (a.status === 'completed' ? 1 : 0) - (b.status === 'completed' ? 1 : 0);
+      } else {
+        return (a.status === 'pending' ? 1 : 0) - (b.status === 'pending' ? 1 : 0);
+      }
     });
-    setFiltered(sortAppointments(filteredByRange, sortOption));
   };
 
-  const clearDateFilter = () => {
-    setFromDate(null);
-    setToDate(null);
-    setFiltered(sortAppointments(appointments, sortOption));
+  const markCompleted = async (id: number) => {
+    try {
+      const list: Patient[] = (await getStorageItem('patients')) || [];
+      const updated = list.map(p =>
+        p.id === id
+          ? { ...p, status: p.status === 'completed' ? 'pending' : 'completed' }
+          : p
+      );
+      await setStorageItem('patients', updated);
+      fetchTodayAppointments();
+    } catch (e) {
+      Alert.alert('Error', 'Failed to update appointment.');
+    }
   };
+
+  const handleToggleStatus = (id: number, currentStatus: 'pending' | 'completed' | undefined) => {
+  const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+
+  if (Platform.OS === 'web') {
+    // Web: directly mark without alert
+    markCompleted(id);
+  } else {
+    // Mobile: show confirmation
+    Alert.alert(
+      'Confirm',
+      `Are you sure you want to mark as ${newStatus}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'OK', onPress: () => markCompleted(id) },
+      ]
+    );
+  }
+};
+
+
+  const pendingCount = filtered.filter(p => p.status !== 'completed').length;
 
   return (
     <View style={styles.wrapper}>
       <ScrollView style={styles.container} contentContainerStyle={{ paddingBottom: 100 }}>
         <Animated.Text entering={FadeInDown.duration(800)} style={styles.title}>
-          <FontAwesome5 name="calendar-check" size={20} color={COLORS.primary} /> Today's Appointments
+          <FontAwesome5 name="calendar-check" size={20} color={COLORS.primary} /> Today's Appointments {/* ({pendingCount} pending)*/}
         </Animated.Text>
 
-        <View style={styles.searchContainer}>
-          <FontAwesome5 name="search" size={16} color={COLORS.gray} style={{ marginRight: 10 }} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search by name or time"
-            placeholderTextColor={COLORS.gray}
-            value={search}
-            onChangeText={handleSearch}
-          />
-        </View>
-
-        <View style={styles.row}>
-          <View style={styles.datePickers}>
-            <Pressable onPress={() => setShowFromPicker(true)} style={styles.dateBtn}>
-              <Text style={styles.dateText}>{fromDate ? fromDate.toDateString() : 'From Date'}</Text>
-            </Pressable>
-            {showFromPicker && (
-              <DateTimePicker
-                value={fromDate || new Date()}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowFromPicker(false);
-                  if (selectedDate) {
-                    setFromDate(selectedDate);
-                    applyDateFilter();
-                  }
-                }}
-              />
-            )}
-
-            <Pressable onPress={() => setShowToPicker(true)} style={styles.dateBtn}>
-              <Text style={styles.dateText}>{toDate ? toDate.toDateString() : 'To Date'}</Text>
-            </Pressable>
-            {showToPicker && (
-              <DateTimePicker
-                value={toDate || new Date()}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => {
-                  setShowToPicker(false);
-                  if (selectedDate) {
-                    setToDate(selectedDate);
-                    applyDateFilter();
-                  }
-                }}
-              />
-            )}
-
-            {(fromDate || toDate) && (
-              <Pressable onPress={clearDateFilter} style={styles.clearBtn}>
-                <Text style={styles.clearText}>Clear</Text>
-              </Pressable>
-            )}
+        {/* Search and Sort Row */}
+        <View style={styles.searchSortRow}>
+          <View style={styles.searchContainer}>
+            <FontAwesome5 name="search" size={16} color={COLORS.gray} style={{ marginRight: 10 }} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search by name or time"
+              value={search}
+              onChangeText={handleSearch}
+              placeholderTextColor={COLORS.gray}
+            />
           </View>
 
-          <View style={styles.sortDropdown}>
+          <View style={styles.sortPickerWrapper}>
             <Picker
-  selectedValue={sortOption}
-  onValueChange={(value: SortOption) => setSortOption(value)}
-  style={styles.picker}
-  dropdownIconColor={COLORS.text} // 👈 Important for visibility of dropdown icon
-  itemStyle={{ color: COLORS.text }} // 👈 Forces picker items to use this color
->
-  <Picker.Item label="Sort by Date" value="date" />
-  <Picker.Item label="Newly Added" value="newest" />
-  <Picker.Item label="Oldest Added" value="oldest" />
-</Picker>
-
+              selectedValue={statusSortOption}
+              onValueChange={(value) => setStatusSortOption(value)}
+              style={styles.picker}
+            >
+              <Picker.Item label="Pending First" value="pendingFirst" />
+              <Picker.Item label="Completed First" value="completedFirst" />
+            </Picker>
           </View>
         </View>
 
-        {loading ? (
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        ) : filtered.length === 0 ? (
+        {loading ? <ActivityIndicator size="large" color={COLORS.primary} /> : filtered.length === 0 ? (
           <Text style={styles.noData}>No appointments for today.</Text>
         ) : (
-          filtered.map((patient: Patient) => (
-            <Animated.View key={patient.id} entering={FadeInDown.delay(100).duration(400)} style={styles.card}>
+          filtered.map((p) => (
+            <Animated.View key={p.id} entering={FadeInDown.delay(100).duration(400)} style={styles.card}>
               <View style={styles.cardHeader}>
-                <Text style={styles.patientName}>{patient.name}</Text>
-                <Text style={styles.patientId}>#{patient.id}</Text>
+                <Text style={styles.patientName}>{p.name}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <TouchableOpacity onPress={() => { setSelectedPatientId(p.id); setModalVisible(true); }}>
+                    <FontAwesome5 name="eye" size={18} color={COLORS.primary} />
+                  </TouchableOpacity>
+                  <Text style={styles.patientId}>#{p.id}</Text>
+                </View>
               </View>
-              <Text style={styles.info}>📱 {patient.mobile}</Text>
-              <Text style={styles.info}>🏠 {patient.address}</Text>
-              <Text style={styles.info}>📅 {patient.date} ⏰ {patient.time}</Text>
+              <Text style={styles.info}>📱 {p.mobile}</Text>
+              <Text style={styles.info}>🏠 {p.address}</Text>
+              <Text style={styles.info}>📅 {p.date} ⏰ {p.time}</Text>
+              <Text style={styles.info}>📝 Status: {p.status || 'pending'}</Text>
+              <TouchableOpacity
+                style={[styles.button, p.status === 'completed' ? { backgroundColor: COLORS.success } : { backgroundColor: COLORS.danger }]}
+                onPress={() => handleToggleStatus(p.id, p.status)}
+              >
+                <Text style={styles.buttonText}>
+                  {p.status === 'completed' ? 'Completed' : 'Mark as Completed'}
+                </Text>
+              </TouchableOpacity>
             </Animated.View>
           ))
         )}
       </ScrollView>
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => router.push('/receptionist/add-patient')}
-      >
-        <Ionicons name="add" size={28} color={COLORS.buttonText} />
-      </TouchableOpacity>
+      {modalVisible && selectedPatientId && (
+        <PatientDetailsModal
+          visible={modalVisible}
+          patientId={selectedPatientId}
+          onClose={() => setModalVisible(false)}
+          onUpdated={() => {
+            setModalVisible(false);
+            fetchTodayAppointments();
+          }}
+        />
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  container: {
-    padding: 20,
-  },
+  wrapper: { flex: 1, backgroundColor: COLORS.background },
+  container: { padding: 20 },
   title: {
     fontSize: 22,
     fontWeight: '700',
@@ -247,15 +221,22 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 10,
   },
+  searchSortRow: {
+    flexDirection: width > 600 ? 'row' : 'column',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: COLORS.card,
     borderRadius: 10,
     paddingHorizontal: 10,
-    marginBottom: 16,
     borderWidth: 1,
     borderColor: COLORS.border,
+    flex: 1,
   },
   searchInput: {
     flex: 1,
@@ -263,56 +244,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: COLORS.text,
   },
-  row: {
-    flexDirection: 'row',
-
-    justifyContent: 'space-between',
-    marginBottom: 16,
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  datePickers: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    flex: 1,
-  },
-  dateBtn: {
+  sortPickerWrapper: {
     backgroundColor: COLORS.card,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderColor: COLORS.border,
+    borderRadius: 10,
     borderWidth: 1,
+    borderColor: COLORS.border,
+    overflow: 'hidden',
+    width: width > 600 ? 200 : '100%',
   },
-  dateText: {
+  picker: {
     color: COLORS.text,
+    height: 50,
   },
-  clearBtn: {
-    backgroundColor: COLORS.danger,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    justifyContent: 'center',
-  },
-  clearText: {
-    color: '#fff',
-    fontWeight: '600',
-  },
-  sortDropdown: {
-    minWidth: 160,
-  },
-  sortLabel: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginBottom: 4,
-    fontWeight: '600',
-  },
- picker: {
-  backgroundColor: COLORS.card,
-  borderRadius: 10,
-  height: 40,
-  width: 160, // or '100%' for responsiveness
-},
   card: {
     backgroundColor: COLORS.card,
     padding: 16,
@@ -330,33 +273,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 6,
   },
-  patientName: {
-    fontWeight: '700',
-    color: COLORS.primary,
-    fontSize: 16,
+  patientName: { fontWeight: '700', color: COLORS.primary, fontSize: 16 },
+  patientId: { fontSize: 13, color: COLORS.gray },
+  info: { fontSize: 14, color: COLORS.text, marginBottom: 2 },
+  button: {
+    marginTop: 10,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  patientId: {
-    fontSize: 13,
-    color: COLORS.gray,
-  },
-  info: {
-    fontSize: 14,
-    color: COLORS.text,
-    marginBottom: 2,
-  },
+  buttonText: { color: '#fff', fontWeight: 'bold' },
   noData: {
     textAlign: 'center',
     color: COLORS.gray,
     fontSize: 16,
     marginTop: 40,
-  },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 30,
-    backgroundColor: COLORS.primary,
-    padding: 16,
-    borderRadius: 30,
-    elevation: 5,
   },
 });

@@ -1,153 +1,247 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  TouchableOpacity,
   StyleSheet,
-  Platform,
-  ScrollView,
-  KeyboardAvoidingView,
+  TouchableOpacity,
   Alert,
-} from 'react-native';
-import COLORS from '@/constants/Colors';
+  ScrollView,
+} from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 
-export default function AddPatientScreen() {
-  const [form, setForm] = useState({
-    name: '',
-    age: '',
-    gender: '',
-    address: '',
-    mobile: '',
-    email: '',
-    note: '',
-  });
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useRouter } from "expo-router";
+import COLORS from "@/constants/Colors";
+import { Patient, VisitHistoryEntry } from "@/types/Patient";
+import { FontAwesome5 } from "@expo/vector-icons";
 
-  const handleChange = (key: string, value: string) => {
-    setForm({ ...form, [key]: value });
-  };
+export default function BookAppointmentScreen() {
+  const router = useRouter();
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [appointmentsToday, setAppointmentsToday] = useState<Patient[]>([]);
+  const [searchText, setSearchText] = useState("");
+  const [filteredPatients, setFilteredPatients] = useState<Patient[]>([]);
 
-  const handleSubmit = () => {
-    const { name, age, gender, address, mobile } = form;
+  const today = new Date().toISOString().split("T")[0];
 
-    if (!name || !age || !gender || !address || !mobile) {
-      Alert.alert('Please fill all required fields!');
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchData = async () => {
+        const data = await AsyncStorage.getItem("patients");
+        const apptData = await AsyncStorage.getItem("appointments");
+        if (data) {
+          const parsed: Patient[] = JSON.parse(data);
+          setPatients(parsed);
+        }
+        if (apptData) {
+          const parsed: Patient[] = JSON.parse(apptData);
+          const todays = parsed.filter((a) => a.date === today);
+          setAppointmentsToday(todays);
+        }
+      };
+      fetchData();
+    }, [])
+  );
+
+  useEffect(() => {
+    if (searchText.trim() === "") {
+      setFilteredPatients([]);
       return;
     }
 
-    console.log('Submitted Patient Info:', form);
-    Alert.alert('Patient added successfully!');
-    // Reset
-    setForm({
-      name: '',
-      age: '',
-      gender: '',
-      address: '',
-      mobile: '',
-      email: '',
-      note: '',
+    const filtered = patients.filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        p.mobile.includes(searchText)
+    );
+    setFilteredPatients(filtered);
+  }, [searchText, patients]);
+
+  const handleBookAppointment = async (selectedPatient: Patient) => {
+   const newVisit: VisitHistoryEntry = {
+  id: Date.now().toString(),
+  date: today,
+  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  department: selectedPatient.department || 'General',
+  doctor: selectedPatient.doctor || 'Not Assigned',
+  status: 'pending',
+};
+
+
+
+    const updatedPatients: Patient[] = patients.map((p) => {
+      if (p.id === selectedPatient.id) {
+        return {
+          ...p,
+          status: "pending",
+          date: today,
+          time: new Date().toLocaleTimeString(),
+          visitHistory: [...(p.visitHistory || []), newVisit],
+        };
+      }
+      return p;
     });
+
+    await AsyncStorage.setItem("patients", JSON.stringify(updatedPatients));
+    setPatients(updatedPatients);
+
+    const todayData = await AsyncStorage.getItem("appointments");
+    const appointmentList: Patient[] = todayData ? JSON.parse(todayData) : [];
+
+   appointmentList.push({
+  ...selectedPatient,
+  status: "pending",
+  date: today,
+  time: new Date().toLocaleTimeString(),
+  department: selectedPatient.department || 'General',
+  doctor: selectedPatient.doctor || 'Not Assigned',
+  visitHistory: [...(selectedPatient.visitHistory || []), newVisit],
+});
+
+
+    await AsyncStorage.setItem("appointments", JSON.stringify(appointmentList));
+    setAppointmentsToday([...appointmentsToday, selectedPatient]);
+
+    Alert.alert("Success", "Appointment booked successfully.");
+    setSearchText("");
+    setFilteredPatients([]);
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.wrapper}
-    >
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Add New Patient</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.titleRow}>
+        <FontAwesome5
+          name="calendar-check"
+          size={22}
+          color={COLORS.primary}
+          style={{ marginRight: 8 }}
+        />
+        <Text style={styles.titleText}>Book Appointment</Text>
+      </View>
 
-        <TextInput
-          placeholder="Full Name"
-          value={form.name}
-          onChangeText={(val) => handleChange('name', val)}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Age"
-          value={form.age}
-          keyboardType="numeric"
-          onChangeText={(val) => handleChange('age', val)}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Gender (e.g. Male / Female / Other)"
-          value={form.gender}
-          onChangeText={(val) => handleChange('gender', val)}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Address"
-          value={form.address}
-          onChangeText={(val) => handleChange('address', val)}
-          style={styles.input}
-          multiline
-        />
-        <TextInput
-          placeholder="Mobile Number"
-          value={form.mobile}
-          keyboardType="phone-pad"
-          onChangeText={(val) => handleChange('mobile', val)}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Email (optional)"
-          value={form.email}
-          keyboardType="email-address"
-          onChangeText={(val) => handleChange('email', val)}
-          style={styles.input}
-        />
-        <TextInput
-          placeholder="Additional Note (optional)"
-          value={form.note}
-          onChangeText={(val) => handleChange('note', val)}
-          style={styles.input}
-          multiline
-        />
+      <TextInput
+        placeholder="Search patient by name or mobile"
+        value={searchText}
+        onChangeText={setSearchText}
+        style={styles.input}
+      />
 
-        <TouchableOpacity onPress={handleSubmit} style={styles.button}>
-          <Text style={styles.btnText}>Add Patient</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      {filteredPatients.length > 0 &&
+        filteredPatients.map((patient) => {
+         const isBookedToday = patient.visitHistory?.some(
+              (entry) => entry.date === today
+            );
+
+
+          return (
+            <View key={patient.id} style={styles.card}>
+              <Text style={styles.label}>Name: {patient.name}</Text>
+              <Text style={styles.label}>Mobile: {patient.mobile}</Text>
+              <Text style={styles.label}>Address: {patient.address}</Text>
+
+              {isBookedToday && (
+                <Text style={styles.alreadyBooked}>🟢 Already Booked Today</Text>
+              )}
+
+              <TouchableOpacity
+                style={[styles.bookBtn, isBookedToday && { backgroundColor: COLORS.disabled }]}
+                onPress={() => {
+                  if (isBookedToday) return;
+                  Alert.alert(
+                    "Confirm Booking",
+                    `Are you sure you want to book an appointment for ${patient.name}?`,
+                    [
+                      { text: "Cancel", style: "cancel" },
+                      { text: "Confirm", onPress: () => handleBookAppointment(patient) },
+                    ]
+                  );
+                }}
+                disabled={isBookedToday}
+              >
+                <Text style={styles.btnText}>
+                  {isBookedToday ? "Already Booked" : "Confirm Booking"}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
   container: {
+    flex: 1,
     padding: 20,
-    paddingBottom: 50,
+    backgroundColor: COLORS.background,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.text,
+    fontWeight: "bold",
+    color: COLORS.primary,
     marginBottom: 20,
-    textAlign: 'center',
   },
   input: {
+    borderColor: COLORS.border,
     borderWidth: 1,
-    borderColor: COLORS.gray,
     borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    marginBottom: 15,
-    backgroundColor: '#fff',
+    padding: 10,
+    backgroundColor: COLORS.card,
+    color: COLORS.text,
+    marginBottom: 20,
   },
-  button: {
-    backgroundColor: COLORS.primary,
+  card: {
+    backgroundColor: COLORS.card,
+    padding: 16,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 6,
+    color: COLORS.text,
+  },
+  bookBtn: {
+    marginTop: 20,
+    backgroundColor: COLORS.success,
     padding: 14,
     borderRadius: 8,
-    alignItems: 'center',
-    marginTop: 10,
+    alignItems: "center",
   },
   btnText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
+    color: COLORS.buttonText,
+    fontWeight: "bold",
+  },
+  alreadyBooked: {
+    marginTop: 8,
+    color: COLORS.success,
+    fontWeight: "600",
+  },
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 20,
+    backgroundColor: COLORS.card,
+    paddingVertical: 12,
+    borderRadius: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  titleText: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: COLORS.primary,
   },
 });

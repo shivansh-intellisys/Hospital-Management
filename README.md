@@ -1,60 +1,74 @@
+# 🏥 Clinic Management App (Receptionist, Patient & Doctor Modules)
 
-
-# 🏥 Clinic Management App (Receptionist & Patient Module)
-
-This is a mobile application built with **React Native (using Expo Router)** that provides a streamlined interface for managing a clinic’s operations for both **Receptionists** and **Patients**.
-
-## 📱 Features
-
-### 👥 Role-Based Modules
-- **Receptionist**
-  - Add New Patient
-  - Book Appointment
-  - View Appointments
-  - Upload Reports
-  - View History
-  - View Prescriptions
-
-- **Patient**
-  - Login to access dashboard
-  - View Appointments
-  - View Prescriptions
-  - Profile Management
+A cross-platform **React Native** mobile application (using **Expo Router**) designed to simplify and manage clinic operations through role-based modules for **Receptionists**, **Patients**, and **Doctors**.
 
 ---
 
-### 🏠 Homepage (index.tsx)
-- Acts as the entry point of the app.
-- Allows users to select either **Receptionist** or **Patient** mode.
-- Contains clinic logo and introductory text.
-- No tab bar is shown here to keep it clean.
+## 📌 Project Modules & Features
+
+### 👩‍💼 Receptionist Module
+- Add new patient profiles
+- Book patient appointments
+- View and manage today's appointments
+- Upload prescriptions & test reports
+- Track visit history of patients
+- View all prescriptions
+- View billing information (registration, test & medical bills)
+
+### 🧑‍⚕️ Doctor Module (Admin Access)
+- Secure login with admin privileges
+- View all appointments (including pending/live ones)
+- Access patient profiles and visit history
+- Upload medical prescriptions and test reports
+- Add doctor suggestions, medicines, and advice
+- View billing for each patient
+
+### 👨‍👩‍👧 Patient Module
+- Patient login to access personal dashboard
+- View profile, upcoming & past appointments
+- View detailed visit history including:
+  - Prescribed medicines
+  - Doctor’s notes and advice
+  - Uploaded test reports & prescriptions
+- Download reports and prescriptions
+- Access billing details
 
 ---
 
-### 🔐 Login Flow
-- After selecting a role, users are redirected to a **Login Page**.
-- After successful login:
-  - Role-based **Tab Navigation** is enabled.
-  - Tabs differ for Receptionist and Patient.
+## 🏠 Homepage (`index.tsx`)
+- Landing screen for selecting **Receptionist**, **Doctor**, or **Patient**
+- Clean UI with clinic logo and welcoming intro
+- No tab bar shown for guest view
 
 ---
 
-### 🧭 Navigation Logic
-- **Expo Router** with file-based routing.
-- Custom `_layout.tsx` in each module folder (`/receptionist`, `/patient`) to manage tab bar visibility and screens.
-- Tab bar only shows after login.
+## 🔐 Login Flow
+- After role selection, users are navigated to a shared **Login Screen**
+- Upon successful login:
+  - Role-based **Tab Navigation** is activated
+  - Different tab layouts for each module (Receptionist, Doctor, Patient)
 
 ---
 
-## 📂 Folder Structure
+## 🧭 Navigation (Routing)
+- Built using **Expo Router** with file-based routing
+- Each module (`/receptionist`, `/doctor`, `/patient`) contains its own `_layout.tsx` for isolated navigation structure
+- Navigation and visibility managed cleanly per role
+- No tab bar on initial home or login screens
+
+---
+
+## 📁 Folder Structure Overview
+
+
 
 app/
-├── index.tsx # Home page (Receptionist & Patient selection)
+├── index.tsx # Entry screen for role selection
 ├── auth/
-│ └── login.tsx # Shared login page
+│ └── login.tsx # Shared login screen
 ├── receptionist/
-│ ├── _layout.tsx # Tab layout for receptionist
-│ ├── dashboard.tsx # Receptionist dashboard
+│ ├── _layout.tsx
+│ ├── dashboard.tsx
 │ ├── add-patient.tsx
 │ ├── book-appointment.tsx
 │ ├── view-appointments.tsx
@@ -62,76 +76,82 @@ app/
 │ ├── view-history.tsx
 │ └── view-prescriptions.tsx
 ├── patient/
-│ ├── _layout.tsx # Tab layout for patient
+│ ├── _layout.tsx
 │ ├── dashboard.tsx
 │ ├── appointments.tsx
 │ ├── prescriptions.tsx
-│ └── profile.tsx
+│ ├── profile.tsx
+│ └── visit-history.tsx
+├── doctor/
+│ ├── _layout.tsx
+│ ├── dashboard.tsx
+│ ├── appointments.tsx
+│ ├── view-patient.tsx
+│ ├── upload-prescription.tsx
+│ └── billing.tsx
 assets/
-├── images/ # All UI images (doctors, logo, icons etc.)
+└── images/ # Logos, UI assets, icons
 
- 
+yaml
+Copy
+Edit
+
 ---
 
 ## 💻 Tech Stack
 
-- **React Native**
-- **Expo (with Expo Router)**
-- **TypeScript**
-- **React Navigation**
-- **Icons**: Ionicons, Font Awesome
-- **Local Navigation State** (no backend yet)
+- ⚛️ **React Native (Expo)**
+- 🌐 **Expo Router** (File-based routing)
+- 🟦 **TypeScript**
+- 📱 **React Navigation**
+- 🧠 **Local Storage** using `AsyncStorage`
+- 🎨 UI Icons: Font Awesome, Ionicons
+- 📸 Image & file uploads (planned)
 
 ---
 
-## 🚀 How to Run
+## 🚀 Getting Started
+
+### 1. Install dependencies
 
 ```bash
-# 1. Install dependencies
 npm install
 
-# 2. Start Expo server
+2. Start Expo server
+
 npx expo start
+Scan the QR code or run it on:
 
-# 3. Run on Android/iOS emulator or scan QR on real device
+Android Emulator
+iOS Simulator
+Expo Go app on a physical device
 
+🛠️ Planned Improvements :
 
-🛠️ Planned Improvements
-🔐 Add authentication with backend
-
-🧾 Store data in Firebase or SQLite
-
-📤 Upload & fetch reports (PDFs/Images)
-
+🔐 Add backend authentication (Node.js or Firebase)
+☁️ Integrate Firebase / SQLite for persistent cloud storage
+📄 File upload: prescriptions, test reports (PDFs/Images)
 🌐 Multi-language support
+💳 Billing enhancements (PDF export, payment tracking)
+🧩 Modularization of services/components for cleaner architecture
 
-🧩 Modular codebase with services & components
-
-
-
-
-
+📃 License
+This project is built and maintained by Shivansh Pandey as a part of full-stack clinic application development learning journey.
 
 
+🔗 Built With
+
+1. Expo
+2. React Native
+3. React Navigation
+4. TypeScript
+5. AsyncStorage
 
 
 
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
-
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
+ 
 
 In the output, you'll find options to open the app in a
 

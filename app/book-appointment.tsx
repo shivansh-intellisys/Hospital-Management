@@ -4,7 +4,7 @@ import { View, Text, StyleSheet, Button } from 'react-native';
 export default function BookAppointment() {
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Book Appointment</Text>
+      <Text style={styles.header}>Book Appointments</Text>
       <Button title="Book Now" onPress={() => {}} />
     </View>
   );

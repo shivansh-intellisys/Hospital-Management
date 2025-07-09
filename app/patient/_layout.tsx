@@ -5,7 +5,7 @@
 //     <Tabs>
 //       <Tabs.Screen name="dashboard" options={{ title: "Dashboard" }} />
 //       <Tabs.Screen name="my-appointments" options={{ title: "Appointmentsss" }} />
-//       <Tabs.Screen name="my-reports" options={{ title: "Reports" }} />
+//       <Tabs.Screen name="test-reports" options={{ title: "Reports" }} />
 //     </Tabs>
 //   );
 // }
@@ -56,11 +56,24 @@ export default function PatientLayout() {
       />
       {/* ✅ HIDE this screen from the tab bar */}
       <Tabs.Screen
-        name="my-reports"
+        name="test-reports"
+        options={{
+          href: null, // Hides this screen from tab bar
+        }}
+      />
+       <Tabs.Screen
+        name="visit-history"
+        options={{
+          href: null, // Hides this screen from tab bar
+        }}
+      />
+       <Tabs.Screen
+        name="add-visit-entry"
         options={{
           href: null, // Hides this screen from tab bar
         }}
       />
     </Tabs>
+    
   );
 }
